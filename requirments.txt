@@ -1,0 +1,6 @@
+dlib
+flask
+opencv-python
+pandas
+Pillow
+tk
