@@ -282,7 +282,7 @@ class Face_Recognizer:
 
         cap.release()
         cv2.destroyAllWindows()
-    
+
    
 
 
