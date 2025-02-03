@@ -257,12 +257,13 @@ class Face_Recognizer:
                                 nam = self.face_name_known_list[similar_person_num]
 
                                 # Entry log for authorized resident
-                                print("Open Gate")
+                                print("Open Door")
                                 self.entry_log(nam)
-                                time.sleep(5)
-                                print("Close Gate")
+                                cv2.waitKey(5000)
+                                print("Close Door")
                             else:
                                 print("Access Denied: Unknown person detected")
+                                cv2.waitKey(5000)
 
                         self.draw_note(img_rd)
 

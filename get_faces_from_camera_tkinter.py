@@ -76,16 +76,16 @@ class Face_Register:
         # self.cap = cv2.VideoCapture("test.mp4")   # Input local video
 
     #  Delete old face folders
-    def GUI_clear_data(self):
-        #  "/data_faces_from_camera/person_x/"...
-        folders_rd = os.listdir(self.path_photos_from_camera)
-        for i in range(len(folders_rd)):
-            shutil.rmtree(self.path_photos_from_camera + folders_rd[i])
-        if os.path.isfile("data/features_all.csv"):
-            os.remove("data/features_all.csv")
-        self.label_cnt_face_in_database['text'] = "0"
-        self.existing_faces_cnt = 0
-        self.log_all["text"] = "Face images and `features_all.csv` removed!"
+    # def GUI_clear_data(self):
+    #     #  "/data_faces_from_camera/person_x/"...
+    #     folders_rd = os.listdir(self.path_photos_from_camera)
+    #     for i in range(len(folders_rd)):
+    #         shutil.rmtree(self.path_photos_from_camera + folders_rd[i])
+    #     if os.path.isfile("data/features_all.csv"):
+    #         os.remove("data/features_all.csv")
+    #     self.label_cnt_face_in_database['text'] = "0"
+    #     self.existing_faces_cnt = 0
+    #     self.log_all["text"] = "Face images and `features_all.csv` removed!"
 
     def GUI_get_input_name(self):
         self.input_name_char = self.input_name.get()
@@ -110,17 +110,17 @@ class Face_Register:
         self.label_warning.grid(row=4, column=0, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
         # Step 1: Clear old data
-        tk.Label(self.frame_right_info,
-                 font=self.font_step_title,
-                 text="Step 1: Clear face photos").grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
-        tk.Button(self.frame_right_info,
-                  text='Clear',
-                  command=self.GUI_clear_data).grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=5, pady=2)
+        # tk.Label(self.frame_right_info,
+        #          font=self.font_step_title,
+        #          text="Step 1: Clear face photos").grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
+        # tk.Button(self.frame_right_info,
+        #           text='Clear',
+        #            command=self.GUI_clear_data).grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=5, pady=2)
 
-        # Step 2: Input name and create folders for face
+        # Step 1: Input name and create folders for face
         tk.Label(self.frame_right_info,
                  font=self.font_step_title,
-                 text="Step 2: Input name").grid(row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
+                 text="Step 1: Input name").grid(row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
 
         tk.Label(self.frame_right_info, text="Name: ").grid(row=8, column=0, sticky=tk.W, padx=5, pady=0)
         self.input_name.grid(row=8, column=1, sticky=tk.W, padx=0, pady=2)
@@ -129,10 +129,10 @@ class Face_Register:
                   text='Input',
                   command=self.GUI_get_input_name).grid(row=8, column=2, padx=5)
 
-        # Step 3: Save current face in frame
+        # Step 2: Save current face in frame
         tk.Label(self.frame_right_info,
                  font=self.font_step_title,
-                 text="Step 3: Save face image").grid(row=9, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
+                 text="Step 2: Save face image").grid(row=9, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
 
         tk.Button(self.frame_right_info,
                   text='Save current face',
