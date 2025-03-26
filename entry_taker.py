@@ -7,6 +7,8 @@ import time
 import logging
 import sqlite3
 import datetime
+import socket
+import pickle
 
 # Dlib / Use frontal face detector of Dlib
 detector = dlib.get_frontal_face_detector()
@@ -30,8 +32,48 @@ cursor.execute(create_table_sql)
 conn.commit()
 conn.close()
 
+class RemoteVideoStream:
+    def __init__(self, server_ip='192.168.69.147', port=5000):
+        self.server_ip = server_ip
+        self.port = port
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.bind((server_ip, port))
+        self.current_frame = None
+
+    def read(self):
+        try:
+            # Receive data from the network
+            x = self.socket.recvfrom(100000000)
+            data = pickle.loads(x[0])
+
+            # Decode the frame
+            frame = cv2.imdecode(data, cv2.IMREAD_COLOR)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            self.current_frame = frame
+            return True, frame
+        except Exception as e:
+            print(f"Error receiving frame: {e}")
+            return False, None
+
+    def isOpened(self):
+        return True  # Always consider the stream as open
+
 class Face_Recognizer:
-    def __init__(self):
+    def send_door_command(self, command):
+        try:
+            command_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            command_socket.sendto(command.encode(), (self.server_ip, 5001))
+            print(f"Sent command: {command}")
+        except Exception as e:
+            print(f"Failed to send command: {e}")
+
+    def __init__(self, pi_ip='192.168.69.147'):
+
+        # def _init_(self, pi_ip='192.168.69.147'):  # Add parameter
+        self.server_ip = pi_ip  # Store Pi's IP
+
+            # Rest of existing initialization...
         self.font = cv2.FONT_ITALIC
 
         # FPS
@@ -75,6 +117,10 @@ class Face_Recognizer:
         # Reclassify after 'reclassify_interval' frames
         self.reclassify_interval_cnt = 0
         self.reclassify_interval = 10
+
+
+
+    # Rest of the methods remain exactly the same as in the original entry_taker.py
 
     # "features_all.csv" / Get known faces from "features_all.csv"
     def get_face_database(self):
@@ -141,7 +187,6 @@ class Face_Recognizer:
         cv2.putText(img_rd, "Faces:  " + str(self.current_frame_face_cnt), (20, 160), self.font, 0.8, (0, 255, 0), 1, cv2.LINE_AA)
         cv2.putText(img_rd, "Q: Quit", (20, 450), self.font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
 
-
     # insert data in database for entry log
     def entry_log(self, name):
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -151,9 +196,6 @@ class Face_Recognizer:
         cursor.execute("SELECT * FROM secure_gate WHERE name = ? AND date = ?", (name, current_date))
         existing_entry = cursor.fetchone()
 
-        # if existing_entry:
-        #     pass  # Resident has already entered today, no additional entry
-        # else:
         current_time = datetime.datetime.now().strftime('%H:%M:%S')
         cursor.execute("INSERT INTO secure_gate (name, time, date) VALUES (?, ?, ?)",
                        (name, current_time, current_date))
@@ -170,6 +212,11 @@ class Face_Recognizer:
                 self.frame_cnt += 1
                 logging.debug("Frame " + str(self.frame_cnt) + " starts")
                 flag, img_rd = stream.read()
+                
+                if not flag:
+                    print("Failed to grab frame from stream")
+                    break
+
                 kk = cv2.waitKey(1)
 
                 # 2. Detect faces for frame X
@@ -252,18 +299,16 @@ class Face_Recognizer:
                             similar_person_num = self.current_frame_face_X_e_distance_list.index(
                                 min(self.current_frame_face_X_e_distance_list))
 
+                            # Modify the recognition block (~line 290):
                             if min(self.current_frame_face_X_e_distance_list) < 0.4:
-                                self.current_frame_face_name_list[k] = self.face_name_known_list[similar_person_num]
-                                nam = self.face_name_known_list[similar_person_num]
-
-                                # Entry log for authorized resident
-                                print("Open Door")
-                                self.entry_log(nam)
-                                cv2.waitKey(5000)
-                                print("Close Door")
+                                name = self.face_name_known_list[similar_person_num]
+                                self.entry_log(name)
+                                self.send_door_command("OPEN_DOOR")  # Send open command
+                                print(f"Access granted for {name}")
+                                cv2.waitKey(5000)  # Keep message visible
                             else:
-                                print("Access Denied: Unknown person detected")
-                                cv2.waitKey(5000)
+                                print("Access Denied: Unknown person")
+                                cv2.waitKey(2000)  # Shorter delay for denied access
 
                         self.draw_note(img_rd)
 
@@ -276,23 +321,21 @@ class Face_Recognizer:
 
                 logging.debug("Frame ends\n\n")
 
-    def run(self):
-        # cap = cv2.VideoCapture("video.mp4")  # Get video stream from video file
-        cap = cv2.VideoCapture(0)              # Get video stream from camera
-        self.process(cap)
+    def run(self, server_ip='192.168.69.147'):
+        # Create RemoteVideoStream instead of using local camera
+        video_stream = RemoteVideoStream(server_ip)
+        self.process(video_stream)
 
-        cap.release()
         cv2.destroyAllWindows()
-
-   
-
 
 def main():
     # logging.basicConfig(level=logging.DEBUG) # Set log level to 'logging.DEBUG' to print debug info of every frame
     logging.basicConfig(level=logging.INFO)
     Face_Recognizer_con = Face_Recognizer()
+    
+    # Optional: Pass server IP if different from default
+    # Face_Recognizer_con.run('10.42.0.154')
     Face_Recognizer_con.run()
-
 
 if __name__ == '__main__':
     main()
